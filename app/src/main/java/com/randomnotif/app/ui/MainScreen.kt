@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.randomnotif.app.data.NotificationItem
 import com.randomnotif.app.data.NotificationSettings
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,16 +127,30 @@ fun NotificationItemCard(
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     
-    // Local state for text fields to prevent losing characters during typing
+    // Local state for text fields - completely decoupled from parent during editing
     var localName by remember(item.id) { mutableStateOf(item.name) }
     var localTexts by remember(item.id) { mutableStateOf(item.notificationTexts) }
     
-    // Sync local state when item changes from outside
-    LaunchedEffect(item.name) {
-        if (item.name != localName) localName = item.name
+    // Debounced save for name - only save after 500ms of no typing
+    LaunchedEffect(localName) {
+        if (localName != item.name) {
+            delay(500)
+            onUpdate(item.copy(name = localName))
+        }
     }
-    LaunchedEffect(item.notificationTexts) {
-        if (item.notificationTexts != localTexts) localTexts = item.notificationTexts
+    
+    // Debounced save for texts - only save after 500ms of no typing
+    LaunchedEffect(localTexts) {
+        if (localTexts != item.notificationTexts) {
+            delay(500)
+            onUpdate(item.copy(notificationTexts = localTexts))
+        }
+    }
+    
+    // Sync from parent only when id changes (new item loaded)
+    LaunchedEffect(item.id) {
+        localName = item.name
+        localTexts = item.notificationTexts
     }
 
     Card(
@@ -201,7 +216,6 @@ fun NotificationItemCard(
                         value = localName,
                         onValueChange = { name ->
                             localName = name
-                            onUpdate(item.copy(name = name))
                         },
                         label = { Text("Название") },
                         modifier = Modifier.fillMaxWidth(),
@@ -225,7 +239,6 @@ fun NotificationItemCard(
                                     val newTexts = localTexts.toMutableList()
                                     newTexts[index] = newText
                                     localTexts = newTexts
-                                    onUpdate(item.copy(notificationTexts = newTexts))
                                 },
                                 label = { Text("Текст ${index + 1}") },
                                 modifier = Modifier.weight(1f),
