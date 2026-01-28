@@ -47,7 +47,12 @@
 
         <receiver
             android:name="com.randomnotif.app.notification.NotificationReceiver"
-            android:exported="false" />
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.randomnotif.app.SHOW_NOTIFICATION" />
+                <action android:name="com.randomnotif.app.DAILY_RESCHEDULE" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name="com.randomnotif.app.notification.BootReceiver"
             android:exported="true" >

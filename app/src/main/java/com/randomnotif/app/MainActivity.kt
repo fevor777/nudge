@@ -1,9 +1,14 @@
 package com.randomnotif.app
 
 import android.Manifest
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,6 +51,7 @@ class MainActivity : ComponentActivity() {
         notificationScheduler = NotificationScheduler(applicationContext)
 
         requestNotificationPermission()
+        requestExactAlarmPermission()
 
         setContent {
             RandomNotifTheme {
@@ -97,6 +103,31 @@ class MainActivity : ComponentActivity() {
                 }
                 else -> {
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
+
+    private fun requestExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Toast.makeText(
+                    this,
+                    "Для работы уведомлений нужно разрешить точные будильники в настройках",
+                    Toast.LENGTH_LONG
+                ).show()
+                try {
+                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    // Fallback - open app settings
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
                 }
             }
         }
