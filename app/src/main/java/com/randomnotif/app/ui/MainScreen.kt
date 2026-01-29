@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,15 +30,35 @@ fun MainScreen(
     onDeleteNotification: (String) -> Unit,
     onUpdateNotification: (NotificationItem) -> Unit,
     onTestClick: (NotificationItem) -> Unit,
+    onExportImportClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Nudge") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Меню")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Export / Import") },
+                            onClick = {
+                                showMenu = false
+                                onExportImportClick()
+                            }
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {

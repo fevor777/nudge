@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -107,5 +108,40 @@ class SettingsRepository(private val context: Context) {
             preferences[PreferencesKeys.NOTIFICATIONS_JSON] = json.encodeToString(updatedSettings)
         }
         return updatedSettings ?: NotificationSettings()
+    }
+
+    fun exportToJson(): String {
+        val prefs = context.getSharedPreferences("settings_export_temp", Context.MODE_PRIVATE)
+        // We need to read current data synchronously for export
+        // Using a blocking approach for simplicity
+        return try {
+            kotlinx.coroutines.runBlocking {
+                context.dataStore.data.first()[PreferencesKeys.NOTIFICATIONS_JSON] ?: json.encodeToString(NotificationSettings())
+            }
+        } catch (e: Exception) {
+            json.encodeToString(NotificationSettings())
+        }
+    }
+
+    fun importFromJson(jsonString: String): Boolean {
+        return try {
+            val settings = json.decodeFromString<NotificationSettings>(jsonString)
+            kotlinx.coroutines.runBlocking {
+                updateSettings(settings)
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun importFromJsonAsync(jsonString: String): NotificationSettings? {
+        return try {
+            val settings = json.decodeFromString<NotificationSettings>(jsonString)
+            updateSettings(settings)
+            settings
+        } catch (e: Exception) {
+            null
+        }
     }
 }
