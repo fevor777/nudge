@@ -19,6 +19,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "version"
+    productFlavors {
+        create("main") {
+            dimension = "version"
+            applicationId = "com.randomnotif.app"
+            resValue("string", "app_name", "Nudge")
+        }
+        create("copy") {
+            dimension = "version"
+            applicationId = "com.randomnotif.app2"
+            resValue("string", "app_name", "Nudge 2")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
