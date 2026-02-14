@@ -23,7 +23,7 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">49</div>
+<div class="counter">86</div>
 <p>tests</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">0.048s</div>
+<div class="counter">0.051s</div>
 <p>duration</p>
 </div>
 </td>
@@ -86,7 +86,7 @@
 </tr>
 <tr>
 <td class="success">DAILY mode with interval 3 schedules every 3 days</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -121,11 +121,86 @@
 </tr>
 <tr>
 <td class="success">DATE_RANGE with null end returns false</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">DATE_RANGE with null start returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">ExactTime data class creates correctly</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_DATE schedules on multiple selected days</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_DATE schedules on selected day of month</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_DATE with empty selectedMonthDays returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_DATE with first working day mode</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_DATE with last working day mode</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_DATE with workingDaysOnly but null position returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY schedules on first Monday of month</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY schedules on fourth Thursday of month</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY schedules on last Sunday of month</td>
+<td class="success">0.001s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY schedules on second Friday of month</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY schedules on third Wednesday of month</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY with null ordinal returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">MONTHLY_BY_WEEKDAY with null weekday returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">NotificationItem can be created with exact times</td>
 <td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
@@ -141,7 +216,7 @@
 </tr>
 <tr>
 <td class="success">SPECIFIC_DATE schedules on matching date</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -150,7 +225,62 @@
 <td class="success">passed</td>
 </tr>
 <tr>
+<td class="success">WEEKLY mode schedules on Sunday (day 7)</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">WEEKLY mode schedules on multiple selected days</td>
+<td class="success">0.003s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">WEEKLY mode schedules on selected day of week</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">WEEKLY mode with empty selectedWeekDays returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">YEARLY schedules on New Year</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">YEARLY schedules on leap day (Feb 29)</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">YEARLY schedules on specific date every year</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">YEARLY with null day returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">YEARLY with null month returns false</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">adding exact time to empty list works</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
 <td class="success">adding texts does not auto-increase textsPerNotification</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">default NotificationItem has useExactTime false</td>
 <td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
@@ -161,12 +291,12 @@
 </tr>
 <tr>
 <td class="success">disabled item still has valid shouldScheduleOnDate</td>
-<td class="success">0.007s</td>
+<td class="success">0.011s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">disabled items are skipped in settings filtering</td>
-<td class="success">0.012s</td>
+<td class="success">0.009s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -176,11 +306,41 @@
 </tr>
 <tr>
 <td class="success">enabling preserves existing intervalStartDateMillis</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">enabling sets intervalStartDateMillis when null (simulating UI logic)</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exact times can be sorted by time of day</td>
+<td class="success">0.002s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exact times convert to minutes correctly</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exact times list can be empty when useExactTime is true</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exact times with same hour are sorted by minute</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exact times with schedule modes - daily with exact times</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exact times with schedule modes - weekly with exact times</td>
 <td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
@@ -196,12 +356,12 @@
 </tr>
 <tr>
 <td class="success">getRandomText returns one of the texts</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">getRandomText returns the only text when list has one item</td>
-<td class="success">0.002s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -221,12 +381,12 @@
 </tr>
 <tr>
 <td class="success">getRandomTexts with count 1 returns single text no comma no bullet</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">getRandomTexts with count 2 has bullet prefix and no comma</td>
-<td class="success">0.005s</td>
+<td class="success">0.004s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -240,8 +400,13 @@
 <td class="success">passed</td>
 </tr>
 <tr>
+<td class="success">multiple exact times in one minute are allowed</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
 <td class="success">no enabled items means nothing to schedule</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -251,7 +416,7 @@
 </tr>
 <tr>
 <td class="success">notificationCount can be decreased to 1</td>
-<td class="success">0.001s</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -266,12 +431,12 @@
 </tr>
 <tr>
 <td class="success">notificationCount defaults to 1</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">notificationCount maximum is 50 (UI constraint)</td>
-<td class="success">0s</td>
+<td class="success">0.001s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -285,8 +450,23 @@
 <td class="success">passed</td>
 </tr>
 <tr>
+<td class="success">removing exact time works</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
 <td class="success">serialization round trip preserves all fields</td>
-<td class="success">0.008s</td>
+<td class="success">0.005s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">switching from exact time to random preserves time range</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">switching from random to exact time preserves other settings</td>
+<td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -319,6 +499,11 @@
 <td class="success">0s</td>
 <td class="success">passed</td>
 </tr>
+<tr>
+<td class="success">updating exact time at specific index works</td>
+<td class="success">0s</td>
+<td class="success">passed</td>
+</tr>
 </table>
 </div>
 </div>
@@ -329,7 +514,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="https://www.gradle.org">Gradle 9.0.0</a> at Feb 14, 2026, 2:55:12 PM</p>
+<a href="https://www.gradle.org">Gradle 9.0.0</a> at Feb 14, 2026, 10:21:02 PM</p>
 </div>
 </div>
 </body>

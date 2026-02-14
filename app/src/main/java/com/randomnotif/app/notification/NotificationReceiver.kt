@@ -1,10 +1,12 @@
 package com.randomnotif.app.notification
 
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import android.app.NotificationManager
+import com.randomnotif.app.MainActivity
 import com.randomnotif.app.R
 import com.randomnotif.app.data.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +38,17 @@ class NotificationReceiver : BroadcastReceiver() {
     private fun showNotification(context: Context, text: String, name: String, index: Int) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        // Create intent to open MainActivity when notification is clicked
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            index,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val notification = NotificationCompat.Builder(context, NotificationScheduler.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(name)
@@ -43,6 +56,7 @@ class NotificationReceiver : BroadcastReceiver() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         notificationManager.notify(NotificationScheduler.NOTIFICATION_ID + index, notification)

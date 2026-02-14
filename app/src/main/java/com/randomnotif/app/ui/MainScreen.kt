@@ -21,13 +21,15 @@ import androidx.compose.ui.unit.dp
 import com.randomnotif.app.data.NotificationItem
 import com.randomnotif.app.data.NotificationSettings
 import com.randomnotif.app.data.ScheduleMode
+import com.randomnotif.app.data.MonthlyOrdinal
+import com.randomnotif.app.data.WorkingDayPosition
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.rememberUpdatedState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MainScreen(
     settings: NotificationSettings,
@@ -140,7 +142,7 @@ fun MainScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NotificationItemCard(
     item: NotificationItem,
@@ -233,6 +235,54 @@ fun NotificationItemCard(
                             }
                             ScheduleMode.SPECIFIC_DATE -> {
                                 item.specificDateMillis?.let { formatDate(it) } ?: "Дата не выбрана"
+                            }
+                            ScheduleMode.WEEKLY -> {
+                                val days = item.selectedWeekDays.sorted().joinToString(", ") {
+                                    when (it) {
+                                        1 -> "Пн"; 2 -> "Вт"; 3 -> "Ср"; 4 -> "Чт"
+                                        5 -> "Пт"; 6 -> "Сб"; 7 -> "Вс"
+                                        else -> ""
+                                    }
+                                }
+                                if (days.isEmpty()) "Еженедельно" else days
+                            }
+                            ScheduleMode.MONTHLY_BY_DATE -> {
+                                if (item.workingDaysOnly) {
+                                    when (item.workingDayPosition) {
+                                        WorkingDayPosition.FIRST -> "Первый раб. день"
+                                        WorkingDayPosition.LAST -> "Последний раб. день"
+                                        null -> "Ежемесячно"
+                                    }
+                                } else {
+                                    val days = item.selectedMonthDays.sorted().take(3).joinToString(", ")
+                                    if (days.isEmpty()) "Ежемесячно" else "$days..."
+                                }
+                            }
+                            ScheduleMode.MONTHLY_BY_WEEKDAY -> {
+                                val ordinal = when (item.monthWeekdayOrdinal) {
+                                    MonthlyOrdinal.FIRST -> "1-й"
+                                    MonthlyOrdinal.SECOND -> "2-й"
+                                    MonthlyOrdinal.THIRD -> "3-й"
+                                    MonthlyOrdinal.FOURTH -> "4-й"
+                                    MonthlyOrdinal.LAST -> "Последний"
+                                    null -> "?"
+                                }
+                                val weekday = when (item.monthWeekday) {
+                                    1 -> "Пн"; 2 -> "Вт"; 3 -> "Ср"; 4 -> "Чт"
+                                    5 -> "Пт"; 6 -> "Сб"; 7 -> "Вс"
+                                    else -> "?"
+                                }
+                                "$ordinal $weekday месяца"
+                            }
+                            ScheduleMode.YEARLY -> {
+                                val month = when (item.yearlyMonth) {
+                                    1 -> "янв"; 2 -> "фев"; 3 -> "мар"; 4 -> "апр"
+                                    5 -> "май"; 6 -> "июн"; 7 -> "июл"; 8 -> "авг"
+                                    9 -> "сен"; 10 -> "окт"; 11 -> "ноя"; 12 -> "дек"
+                                    else -> "?"
+                                }
+                                val day = item.yearlyDay ?: "?"
+                                "$day $month"
                             }
                         }
                         Text(
@@ -382,29 +432,80 @@ fun NotificationItemCard(
                         text = "Режим расписания",
                         style = MaterialTheme.typography.labelLarge
                     )
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SegmentedButton(
-                            selected = item.scheduleMode == ScheduleMode.DAILY,
-                            onClick = { onUpdate(item.copy(scheduleMode = ScheduleMode.DAILY)) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3)
+                    
+                    var expandedScheduleMode by remember { mutableStateOf(false) }
+                    val scheduleText = when (item.scheduleMode) {
+                        ScheduleMode.DAILY -> "Ежедневно"
+                        ScheduleMode.WEEKLY -> "Еженедельно"
+                        ScheduleMode.MONTHLY_BY_DATE -> "Ежемесячно (числа)"
+                        ScheduleMode.MONTHLY_BY_WEEKDAY -> "Ежемесячно (дни недели)"
+                        ScheduleMode.YEARLY -> "Ежегодно"
+                        ScheduleMode.DATE_RANGE -> "Диапазон дат"
+                        ScheduleMode.SPECIFIC_DATE -> "Конкретная дата"
+                    }
+                    
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { expandedScheduleMode = true },
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Ежедневно", style = MaterialTheme.typography.labelSmall)
+                            Text(scheduleText)
                         }
-                        SegmentedButton(
-                            selected = item.scheduleMode == ScheduleMode.DATE_RANGE,
-                            onClick = { onUpdate(item.copy(scheduleMode = ScheduleMode.DATE_RANGE)) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3)
+                        
+                        DropdownMenu(
+                            expanded = expandedScheduleMode,
+                            onDismissRequest = { expandedScheduleMode = false },
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Диапазон", style = MaterialTheme.typography.labelSmall)
-                        }
-                        SegmentedButton(
-                            selected = item.scheduleMode == ScheduleMode.SPECIFIC_DATE,
-                            onClick = { onUpdate(item.copy(scheduleMode = ScheduleMode.SPECIFIC_DATE)) },
-                            shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3)
-                        ) {
-                            Text("Дата", style = MaterialTheme.typography.labelSmall)
+                            DropdownMenuItem(
+                                text = { Text("Ежедневно") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.DAILY))
+                                    expandedScheduleMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Еженедельно") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.WEEKLY))
+                                    expandedScheduleMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ежемесячно (числа)") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.MONTHLY_BY_DATE))
+                                    expandedScheduleMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ежемесячно (дни недели)") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY))
+                                    expandedScheduleMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ежегодно") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.YEARLY))
+                                    expandedScheduleMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Диапазон дат") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.DATE_RANGE))
+                                    expandedScheduleMode = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Конкретная дата") },
+                                onClick = {
+                                    onUpdate(item.copy(scheduleMode = ScheduleMode.SPECIFIC_DATE))
+                                    expandedScheduleMode = false
+                                }
+                            )
                         }
                     }
 
@@ -512,84 +613,430 @@ fun NotificationItemCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-
-                    // Time Range
-                    Text(
-                        text = "Временной промежуток",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        ScheduleMode.WEEKLY -> {
                             Text(
-                                text = "Начало",
-                                style = MaterialTheme.typography.bodySmall
+                                text = "Дни недели",
+                                style = MaterialTheme.typography.labelLarge
                             )
-                            OutlinedButton(
-                                onClick = { showStartTimePicker = true }
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    text = String.format("%02d:%02d", item.startHour, item.startMinute)
-                                )
+                                val dayNames = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
+                                for (day in 1..7) {
+                                    FilterChip(
+                                        selected = item.selectedWeekDays.contains(day),
+                                        onClick = {
+                                            val newDays = if (item.selectedWeekDays.contains(day)) {
+                                                item.selectedWeekDays - day
+                                            } else {
+                                                item.selectedWeekDays + day
+                                            }
+                                            onUpdate(item.copy(selectedWeekDays = newDays))
+                                        },
+                                        label = { Text(dayNames[day - 1]) }
+                                    )
+                                }
                             }
                         }
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        ScheduleMode.MONTHLY_BY_DATE -> {
                             Text(
-                                text = "Конец",
-                                style = MaterialTheme.typography.bodySmall
+                                text = "Выбор дня месяца",
+                                style = MaterialTheme.typography.labelLarge
                             )
-                            OutlinedButton(
-                                onClick = { showEndTimePicker = true }
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = String.format("%02d:%02d", item.endHour, item.endMinute)
+                                Checkbox(
+                                    checked = item.workingDaysOnly,
+                                    onCheckedChange = {
+                                        onUpdate(item.copy(workingDaysOnly = it))
+                                    }
                                 )
+                                Text("Рабочий день месяца")
+                            }
+                            
+                            if (item.workingDaysOnly) {
+                                var expandedWorkingDay by remember { mutableStateOf(false) }
+                                val workingDayText = when (item.workingDayPosition) {
+                                    WorkingDayPosition.FIRST -> "Первый"
+                                    WorkingDayPosition.LAST -> "Последний"
+                                    null -> "Выбрать"
+                                }
+                                
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedButton(
+                                        onClick = { expandedWorkingDay = true },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(workingDayText)
+                                    }
+                                    
+                                    DropdownMenu(
+                                        expanded = expandedWorkingDay,
+                                        onDismissRequest = { expandedWorkingDay = false }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Первый") },
+                                            onClick = {
+                                                onUpdate(item.copy(workingDayPosition = WorkingDayPosition.FIRST))
+                                                expandedWorkingDay = false
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text("Последний") },
+                                            onClick = {
+                                                onUpdate(item.copy(workingDayPosition = WorkingDayPosition.LAST))
+                                                expandedWorkingDay = false
+                                            }
+                                        )
+                                    }
+                                }
+                            } else {
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    for (day in 1..31) {
+                                        FilterChip(
+                                            selected = item.selectedMonthDays.contains(day),
+                                            onClick = {
+                                                val newDays = if (item.selectedMonthDays.contains(day)) {
+                                                    item.selectedMonthDays - day
+                                                } else {
+                                                    item.selectedMonthDays + day
+                                                }
+                                                onUpdate(item.copy(selectedMonthDays = newDays))
+                                            },
+                                            label = { Text(day.toString()) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        ScheduleMode.MONTHLY_BY_WEEKDAY -> {
+                            Text(
+                                text = "День недели месяца",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            
+                            var expandedOrdinal by remember { mutableStateOf(false) }
+                            val ordinalText = when (item.monthWeekdayOrdinal) {
+                                MonthlyOrdinal.FIRST -> "Первый"
+                                MonthlyOrdinal.SECOND -> "Второй"
+                                MonthlyOrdinal.THIRD -> "Третий"
+                                MonthlyOrdinal.FOURTH -> "Четвёртый"
+                                MonthlyOrdinal.LAST -> "Последний"
+                                null -> "Выбрать"
+                            }
+                            
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { expandedOrdinal = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(ordinalText)
+                                }
+                                
+                                DropdownMenu(
+                                    expanded = expandedOrdinal,
+                                    onDismissRequest = { expandedOrdinal = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Первый") },
+                                        onClick = {
+                                            onUpdate(item.copy(monthWeekdayOrdinal = MonthlyOrdinal.FIRST))
+                                            expandedOrdinal = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Второй") },
+                                        onClick = {
+                                            onUpdate(item.copy(monthWeekdayOrdinal = MonthlyOrdinal.SECOND))
+                                            expandedOrdinal = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Третий") },
+                                        onClick = {
+                                            onUpdate(item.copy(monthWeekdayOrdinal = MonthlyOrdinal.THIRD))
+                                            expandedOrdinal = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Четвёртый") },
+                                        onClick = {
+                                            onUpdate(item.copy(monthWeekdayOrdinal = MonthlyOrdinal.FOURTH))
+                                            expandedOrdinal = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Последний") },
+                                        onClick = {
+                                            onUpdate(item.copy(monthWeekdayOrdinal = MonthlyOrdinal.LAST))
+                                            expandedOrdinal = false
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            var expandedWeekday by remember { mutableStateOf(false) }
+                            val weekdayNames = listOf("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье")
+                            val weekdayText = item.monthWeekday?.let { weekdayNames[it - 1] } ?: "Выбрать день"
+                            
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { expandedWeekday = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(weekdayText)
+                                }
+                                
+                                DropdownMenu(
+                                    expanded = expandedWeekday,
+                                    onDismissRequest = { expandedWeekday = false }
+                                ) {
+                                    for (day in 1..7) {
+                                        DropdownMenuItem(
+                                            text = { Text(weekdayNames[day - 1]) },
+                                            onClick = {
+                                                onUpdate(item.copy(monthWeekday = day))
+                                                expandedWeekday = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        ScheduleMode.YEARLY -> {
+                            Text(
+                                text = "Дата в году",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            
+                            var expandedMonth by remember { mutableStateOf(false) }
+                            val monthNames = listOf("Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
+                                                   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь")
+                            val monthText = item.yearlyMonth?.let { monthNames[it - 1] } ?: "Выбрать месяц"
+                            
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedButton(
+                                    onClick = { expandedMonth = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(monthText)
+                                }
+                                
+                                DropdownMenu(
+                                    expanded = expandedMonth,
+                                    onDismissRequest = { expandedMonth = false }
+                                ) {
+                                    for (month in 1..12) {
+                                        DropdownMenuItem(
+                                            text = { Text(monthNames[month - 1]) },
+                                            onClick = {
+                                                onUpdate(item.copy(yearlyMonth = month))
+                                                expandedMonth = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text("День месяца", style = MaterialTheme.typography.bodyMedium)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        if ((item.yearlyDay ?: 1) > 1) {
+                                            onUpdate(item.copy(yearlyDay = (item.yearlyDay ?: 1) - 1))
+                                        }
+                                    },
+                                    enabled = (item.yearlyDay ?: 1) > 1
+                                ) {
+                                    Text("-")
+                                }
+                                Text(
+                                    text = (item.yearlyDay ?: 1).toString(),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                )
+                                OutlinedButton(
+                                    onClick = {
+                                        if ((item.yearlyDay ?: 1) < 31) {
+                                            onUpdate(item.copy(yearlyDay = (item.yearlyDay ?: 1) + 1))
+                                        }
+                                    },
+                                    enabled = (item.yearlyDay ?: 1) < 31
+                                ) {
+                                    Text("+")
+                                }
                             }
                         }
                     }
 
-
-                    // Notification Count
-                    Text(
-                        text = "Количество уведомлений",
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    // Time Mode Selection
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                if (item.notificationCount > 1) {
-                                    onUpdate(item.copy(notificationCount = item.notificationCount - 1))
-                                }
-                            },
-                            enabled = item.notificationCount > 1
-                        ) {
-                            Text("-")
-                        }
-                        Text(
-                            text = item.notificationCount.toString(),
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                        Checkbox(
+                            checked = item.useExactTime,
+                            onCheckedChange = {
+                                onUpdate(item.copy(useExactTime = it))
+                            }
                         )
+                        Text("Точное время")
+                    }
+
+                    if (item.useExactTime) {
+                        // Exact Times List
+                        Text(
+                            text = "Времена уведомлений",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        
+                        item.exactTimes.forEachIndexed { index, time ->
+                            var showTimePicker by remember { mutableStateOf(false) }
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = { showTimePicker = true },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(String.format("%02d:%02d", time.hour, time.minute))
+                                }
+                                
+                                IconButton(
+                                    onClick = {
+                                        val newTimes = item.exactTimes.toMutableList()
+                                        newTimes.removeAt(index)
+                                        onUpdate(item.copy(exactTimes = newTimes))
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Удалить время")
+                                }
+                            }
+                            
+                            if (showTimePicker) {
+                                TimePickerDialog(
+                                    initialHour = time.hour,
+                                    initialMinute = time.minute,
+                                    onConfirm = { hour, minute ->
+                                        val newTimes = item.exactTimes.toMutableList()
+                                        newTimes[index] = com.randomnotif.app.data.ExactTime(hour, minute)
+                                        onUpdate(item.copy(exactTimes = newTimes.sortedBy { it.hour * 60 + it.minute }))
+                                        showTimePicker = false
+                                    },
+                                    onDismiss = { showTimePicker = false }
+                                )
+                            }
+                        }
+                        
+                        // Add Time Button
                         OutlinedButton(
                             onClick = {
-                                if (item.notificationCount < 50) {
-                                    onUpdate(item.copy(notificationCount = item.notificationCount + 1))
-                                }
+                                val newTimes = item.exactTimes + com.randomnotif.app.data.ExactTime(12, 0)
+                                onUpdate(item.copy(exactTimes = newTimes.sortedBy { it.hour * 60 + it.minute }))
                             },
-                            enabled = item.notificationCount < 50
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("+")
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Добавить время")
+                        }
+                    } else {
+                        // Time Range
+                        Text(
+                            text = "Временной промежуток",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Начало",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                OutlinedButton(
+                                    onClick = { showStartTimePicker = true }
+                                ) {
+                                    Text(
+                                        text = String.format("%02d:%02d", item.startHour, item.startMinute)
+                                    )
+                                }
+                            }
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Конец",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                OutlinedButton(
+                                    onClick = { showEndTimePicker = true }
+                                ) {
+                                    Text(
+                                        text = String.format("%02d:%02d", item.endHour, item.endMinute)
+                                    )
+                                }
+                            }
+                        }
+
+
+                        // Notification Count
+                        Text(
+                            text = "Количество уведомлений",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    if (item.notificationCount > 1) {
+                                        onUpdate(item.copy(notificationCount = item.notificationCount - 1))
+                                    }
+                                },
+                                enabled = item.notificationCount > 1
+                            ) {
+                                Text("-")
+                            }
+                            Text(
+                                text = item.notificationCount.toString(),
+                                style = MaterialTheme.typography.headlineSmall,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+                            OutlinedButton(
+                                onClick = {
+                                    if (item.notificationCount < 50) {
+                                        onUpdate(item.copy(notificationCount = item.notificationCount + 1))
+                                    }
+                                },
+                                enabled = item.notificationCount < 50
+                            ) {
+                                Text("+")
+                            }
                         }
                     }
 

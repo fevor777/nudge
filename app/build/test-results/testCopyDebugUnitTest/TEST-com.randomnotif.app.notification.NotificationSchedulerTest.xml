@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.randomnotif.app.notification.NotificationSchedulerTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-02-14T20:21:02.576Z" hostname="192.168.1.18" time="0.002">
+  <properties/>
+  <testcase name="exact times with yearly mode on specific month and day" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact time mode ignores notificationCount" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="empty exact times list when useExactTime is true" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times conversion to minutes is consistent" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.001"/>
+  <testcase name="exact times work with all schedule modes - WEEKLY" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="single exact time is valid" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times can span midnight" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times are sorted correctly for scheduling" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times are used when useExactTime is true" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="many exact times are valid" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.001"/>
+  <testcase name="random time mode uses notificationCount" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times with monthly by weekday mode" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times work with DATE_RANGE mode" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="switching between modes preserves exact times" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times work with all schedule modes - DAILY" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <testcase name="exact times work with SPECIFIC_DATE mode" classname="com.randomnotif.app.notification.NotificationSchedulerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

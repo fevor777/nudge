@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.randomnotif.app.MainActivity
 import com.randomnotif.app.R
 import com.randomnotif.app.data.NotificationItem
 import com.randomnotif.app.data.NotificationSettings
@@ -77,62 +78,68 @@ class NotificationScheduler(private val context: Context) {
 
         if (!item.shouldScheduleOnDate(todayStartMillis)) return 0
 
-        // Use date + item id as seed for consistent but unique random times per day per item
-        val seed = (year * 1000L + today) + item.id.hashCode()
-        val random = Random(seed)
-
-        val startTimeMinutes = item.startHour * 60 + item.startMinute
-        val endTimeMinutes = item.endHour * 60 + item.endMinute
-        
-        val totalMinutes = if (endTimeMinutes > startTimeMinutes) {
-            endTimeMinutes - startTimeMinutes
+        // Определяем времена уведомлений
+        val notificationTimes = if (item.useExactTime && item.exactTimes.isNotEmpty()) {
+            // Используем точные времена
+            item.exactTimes.map { it.hour * 60 + it.minute }.sorted()
         } else {
-            (24 * 60 - startTimeMinutes) + endTimeMinutes
-        }
+            // Генерируем случайные времена в промежутке
+            val seed = (year * 1000L + today) + item.id.hashCode()
+            val random = Random(seed)
 
-        if (totalMinutes <= 0 || item.notificationCount <= 0) return 0
+            val startTimeMinutes = item.startHour * 60 + item.startMinute
+            val endTimeMinutes = item.endHour * 60 + item.endMinute
+            
+            val totalMinutes = if (endTimeMinutes > startTimeMinutes) {
+                endTimeMinutes - startTimeMinutes
+            } else {
+                (24 * 60 - startTimeMinutes) + endTimeMinutes
+            }
 
-        // Минимальный интервал между уведомлениями (15 минут)
-        val minIntervalMinutes = 15
-        
-        // Generate random times for notifications with minimum interval
-        val randomTimes = mutableListOf<Int>()
-        var attempts = 0
-        val maxAttempts = 100
-        
-        while (randomTimes.size < item.notificationCount && attempts < maxAttempts) {
-            val randomOffset = random.nextInt(totalMinutes)
-            val notificationMinutes = (startTimeMinutes + randomOffset) % (24 * 60)
+            if (totalMinutes <= 0 || item.notificationCount <= 0) return 0
+
+            // Минимальный интервал между уведомлениями (15 минут)
+            val minIntervalMinutes = 15
             
-            // Проверяем, что новое время достаточно далеко от уже добавленных
-            val isFarEnough = randomTimes.all { existingTime ->
-                val diff = kotlin.math.abs(notificationMinutes - existingTime)
-                val minDiff = kotlin.math.min(diff, 24 * 60 - diff) // учитываем переход через полночь
-                minDiff >= minIntervalMinutes
+            // Generate random times for notifications with minimum interval
+            val randomTimes = mutableListOf<Int>()
+            var attempts = 0
+            val maxAttempts = 100
+            
+            while (randomTimes.size < item.notificationCount && attempts < maxAttempts) {
+                val randomOffset = random.nextInt(totalMinutes)
+                val notificationMinutes = (startTimeMinutes + randomOffset) % (24 * 60)
+                
+                // Проверяем, что новое время достаточно далеко от уже добавленных
+                val isFarEnough = randomTimes.all { existingTime ->
+                    val diff = kotlin.math.abs(notificationMinutes - existingTime)
+                    val minDiff = kotlin.math.min(diff, 24 * 60 - diff) // учитываем переход через полночь
+                    minDiff >= minIntervalMinutes
+                }
+                
+                if (isFarEnough) {
+                    randomTimes.add(notificationMinutes)
+                }
+                attempts++
             }
             
-            if (isFarEnough) {
-                randomTimes.add(notificationMinutes)
+            // Если не удалось найти достаточно уникальных времён, равномерно распределяем
+            if (randomTimes.size < item.notificationCount) {
+                randomTimes.clear()
+                val interval = totalMinutes / item.notificationCount
+                for (i in 0 until item.notificationCount) {
+                    val offset = interval * i + random.nextInt(interval.coerceAtLeast(1))
+                    val notificationMinutes = (startTimeMinutes + offset) % (24 * 60)
+                    randomTimes.add(notificationMinutes)
+                }
             }
-            attempts++
+            
+            randomTimes.sorted()
         }
-        
-        // Если не удалось найти достаточно уникальных времён, равномерно распределяем
-        if (randomTimes.size < item.notificationCount) {
-            randomTimes.clear()
-            val interval = totalMinutes / item.notificationCount
-            for (i in 0 until item.notificationCount) {
-                val offset = interval * i + random.nextInt(interval.coerceAtLeast(1))
-                val notificationMinutes = (startTimeMinutes + offset) % (24 * 60)
-                randomTimes.add(notificationMinutes)
-            }
-        }
-        
-        randomTimes.sort()
 
         val currentTimeMinutes = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
 
-        for ((index, timeMinutes) in randomTimes.withIndex()) {
+        for ((index, timeMinutes) in notificationTimes.withIndex()) {
             val notificationCalendar = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, timeMinutes / 60)
                 set(Calendar.MINUTE, timeMinutes % 60)
@@ -156,7 +163,7 @@ class NotificationScheduler(private val context: Context) {
             )
         }
 
-        return randomTimes.size
+        return notificationTimes.size
     }
 
     private fun scheduleExactAlarm(triggerTime: Long, notificationText: String, notificationName: String, index: Int) {
@@ -276,6 +283,17 @@ class NotificationScheduler(private val context: Context) {
     }
 
     fun showTestNotification(text: String, name: String) {
+        // Create intent to open MainActivity when notification is clicked
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            name.hashCode(),
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(name)
@@ -283,6 +301,7 @@ class NotificationScheduler(private val context: Context) {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         notificationManager.notify(NOTIFICATION_ID + name.hashCode(), notification)

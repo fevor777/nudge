@@ -334,6 +334,301 @@ class NotificationItemTest {
     }
 
     // ============================================================
+    // shouldScheduleOnDate() — WEEKLY mode
+    // ============================================================
+
+    @Test
+    fun `WEEKLY mode schedules on selected day of week`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.WEEKLY,
+            selectedWeekDays = setOf(1) // Понедельник
+        )
+        // 17 февраля 2026 — понедельник
+        val monday = dateMillis(2026, 2, 16)
+        assertTrue("Monday should schedule", item.shouldScheduleOnDate(monday))
+        
+        // 18 февраля 2026 — вторник
+        val tuesday = dateMillis(2026, 2, 17)
+        assertFalse("Tuesday should not schedule", item.shouldScheduleOnDate(tuesday))
+    }
+
+    @Test
+    fun `WEEKLY mode schedules on multiple selected days`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.WEEKLY,
+            selectedWeekDays = setOf(1, 3, 5) // Понедельник, Среда, Пятница
+        )
+        // Февраль 2026: неделя начинается с понедельника 16-го
+        val monday = dateMillis(2026, 2, 16)
+        val tuesday = dateMillis(2026, 2, 17)
+        val wednesday = dateMillis(2026, 2, 18)
+        val thursday = dateMillis(2026, 2, 19)
+        val friday = dateMillis(2026, 2, 20)
+        val saturday = dateMillis(2026, 2, 21)
+        val sunday = dateMillis(2026, 2, 22)
+        
+        assertTrue("Monday should schedule", item.shouldScheduleOnDate(monday))
+        assertFalse("Tuesday should not schedule", item.shouldScheduleOnDate(tuesday))
+        assertTrue("Wednesday should schedule", item.shouldScheduleOnDate(wednesday))
+        assertFalse("Thursday should not schedule", item.shouldScheduleOnDate(thursday))
+        assertTrue("Friday should schedule", item.shouldScheduleOnDate(friday))
+        assertFalse("Saturday should not schedule", item.shouldScheduleOnDate(saturday))
+        assertFalse("Sunday should not schedule", item.shouldScheduleOnDate(sunday))
+    }
+
+    @Test
+    fun `WEEKLY mode with empty selectedWeekDays returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.WEEKLY,
+            selectedWeekDays = emptySet()
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 2, 16))) // любой день
+    }
+
+    @Test
+    fun `WEEKLY mode schedules on Sunday (day 7)`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.WEEKLY,
+            selectedWeekDays = setOf(7) // Воскресенье
+        )
+        // 15 февраля 2026 — воскресенье
+        val sunday = dateMillis(2026, 2, 15)
+        assertTrue("Sunday should schedule", item.shouldScheduleOnDate(sunday))
+        
+        val monday = dateMillis(2026, 2, 16)
+        assertFalse("Monday should not schedule", item.shouldScheduleOnDate(monday))
+    }
+
+    // ============================================================
+    // shouldScheduleOnDate() — MONTHLY_BY_DATE mode
+    // ============================================================
+
+    @Test
+    fun `MONTHLY_BY_DATE schedules on selected day of month`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_DATE,
+            selectedMonthDays = setOf(15)
+        )
+        assertTrue("15th should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 15)))
+        assertTrue("15th of March should schedule", item.shouldScheduleOnDate(dateMillis(2026, 3, 15)))
+        assertFalse("14th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 14)))
+        assertFalse("16th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 16)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_DATE schedules on multiple selected days`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_DATE,
+            selectedMonthDays = setOf(1, 15, 30)
+        )
+        assertTrue("1st should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 1)))
+        assertTrue("15th should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 15)))
+        assertFalse("14th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 14)))
+        // В феврале 2026 нет 30-го числа
+        assertTrue("30th in January should schedule", item.shouldScheduleOnDate(dateMillis(2026, 1, 30)))
+        assertFalse("28th in February should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 28)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_DATE with empty selectedMonthDays returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_DATE,
+            selectedMonthDays = emptySet()
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 2, 15)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_DATE with first working day mode`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_DATE,
+            workingDaysOnly = true,
+            workingDayPosition = WorkingDayPosition.FIRST
+        )
+        // Март 2026: 1-е воскресенье, 2-е понедельник (первый рабочий день)
+        assertFalse("Sunday 1st should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 3, 1)))
+        assertTrue("Monday 2nd should schedule", item.shouldScheduleOnDate(dateMillis(2026, 3, 2)))
+        assertFalse("Tuesday 3rd should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 3, 3)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_DATE with last working day mode`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_DATE,
+            workingDaysOnly = true,
+            workingDayPosition = WorkingDayPosition.LAST
+        )
+        // Февраль 2026: 28-е суббота, 27-е пятница (последний рабочий день)
+        assertFalse("Saturday 28th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 28)))
+        assertTrue("Friday 27th should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 27)))
+        assertFalse("Thursday 26th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 26)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_DATE with workingDaysOnly but null position returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_DATE,
+            workingDaysOnly = true,
+            workingDayPosition = null
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 2, 15)))
+    }
+
+    // ============================================================
+    // shouldScheduleOnDate() — MONTHLY_BY_WEEKDAY mode
+    // ============================================================
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY schedules on first Monday of month`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = MonthlyOrdinal.FIRST,
+            monthWeekday = 1 // Понедельник
+        )
+        // Февраль 2026: первый понедельник — 2-е число
+        assertTrue("First Monday (2nd) should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 2)))
+        assertFalse("Monday 9th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 9)))
+        assertFalse("Tuesday 3rd should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 3)))
+        
+        // Март 2026: первый понедельник — 2-е число
+        assertTrue("First Monday in March should schedule", item.shouldScheduleOnDate(dateMillis(2026, 3, 2)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY schedules on second Friday of month`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = MonthlyOrdinal.SECOND,
+            monthWeekday = 5 // Пятница
+        )
+        // Февраль 2026: пятницы 6, 13, 20, 27 → второй — 13-е
+        assertFalse("First Friday (6th) should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 6)))
+        assertTrue("Second Friday (13th) should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 13)))
+        assertFalse("Third Friday (20th) should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 20)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY schedules on third Wednesday of month`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = MonthlyOrdinal.THIRD,
+            monthWeekday = 3 // Среда
+        )
+        // Февраль 2026: среды 4, 11, 18, 25 → третья — 18-е
+        assertFalse("Second Wednesday (11th) should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 11)))
+        assertTrue("Third Wednesday (18th) should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 18)))
+        assertFalse("Fourth Wednesday (25th) should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 25)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY schedules on fourth Thursday of month`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = MonthlyOrdinal.FOURTH,
+            monthWeekday = 4 // Четверг
+        )
+        // Февраль 2026: четверги 5, 12, 19, 26 → четвёртый — 26-е
+        assertFalse("Third Thursday (19th) should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 19)))
+        assertTrue("Fourth Thursday (26th) should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 26)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY schedules on last Sunday of month`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = MonthlyOrdinal.LAST,
+            monthWeekday = 7 // Воскресенье
+        )
+        // Февраль 2026: воскресенья 1, 8, 15, 22 → последнее — 22-е
+        assertFalse("Sunday 15th should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 15)))
+        assertTrue("Last Sunday (22nd) should schedule", item.shouldScheduleOnDate(dateMillis(2026, 2, 22)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY with null ordinal returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = null,
+            monthWeekday = 1
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 2, 2)))
+    }
+
+    @Test
+    fun `MONTHLY_BY_WEEKDAY with null weekday returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.MONTHLY_BY_WEEKDAY,
+            monthWeekdayOrdinal = MonthlyOrdinal.FIRST,
+            monthWeekday = null
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 2, 2)))
+    }
+
+    // ============================================================
+    // shouldScheduleOnDate() — YEARLY mode
+    // ============================================================
+
+    @Test
+    fun `YEARLY schedules on specific date every year`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.YEARLY,
+            yearlyMonth = 6,  // Июнь
+            yearlyDay = 15
+        )
+        assertTrue("June 15 2026 should schedule", item.shouldScheduleOnDate(dateMillis(2026, 6, 15)))
+        assertTrue("June 15 2027 should schedule", item.shouldScheduleOnDate(dateMillis(2027, 6, 15)))
+        assertFalse("June 14 should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 6, 14)))
+        assertFalse("June 16 should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 6, 16)))
+        assertFalse("July 15 should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 7, 15)))
+    }
+
+    @Test
+    fun `YEARLY schedules on New Year`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.YEARLY,
+            yearlyMonth = 1,  // Январь
+            yearlyDay = 1
+        )
+        assertTrue("Jan 1 2026 should schedule", item.shouldScheduleOnDate(dateMillis(2026, 1, 1)))
+        assertTrue("Jan 1 2027 should schedule", item.shouldScheduleOnDate(dateMillis(2027, 1, 1)))
+        assertFalse("Jan 2 should not schedule", item.shouldScheduleOnDate(dateMillis(2026, 1, 2)))
+        assertFalse("Dec 31 should not schedule", item.shouldScheduleOnDate(dateMillis(2025, 12, 31)))
+    }
+
+    @Test
+    fun `YEARLY schedules on leap day (Feb 29)`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.YEARLY,
+            yearlyMonth = 2,  // Февраль
+            yearlyDay = 29
+        )
+        // 2024 и 2028 — високосные годы
+        assertTrue("Feb 29 2024 should schedule", item.shouldScheduleOnDate(dateMillis(2024, 2, 29)))
+        // 2026 — не високосный год, 29 февраля нет
+        assertFalse("Feb 29 2026 should not schedule (no such date)", item.shouldScheduleOnDate(dateMillis(2026, 2, 28)))
+    }
+
+    @Test
+    fun `YEARLY with null month returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.YEARLY,
+            yearlyMonth = null,
+            yearlyDay = 15
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 6, 15)))
+    }
+
+    @Test
+    fun `YEARLY with null day returns false`() {
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.YEARLY,
+            yearlyMonth = 6,
+            yearlyDay = null
+        )
+        assertFalse(item.shouldScheduleOnDate(dateMillis(2026, 6, 15)))
+    }
+
+    // ============================================================
     // JSON serialization round-trip (backward compatibility)
     // ============================================================
 
@@ -715,5 +1010,242 @@ class NotificationItemTest {
         assertEquals(5, item.notificationCount)
         assertEquals(2, item.textsPerNotification)
         assertEquals(3, item.notificationTexts.size)
+    }
+
+    // ============================================================
+    // Exact Time tests
+    // ============================================================
+
+    @Test
+    fun `ExactTime data class creates correctly`() {
+        val time = ExactTime(14, 30)
+        assertEquals(14, time.hour)
+        assertEquals(30, time.minute)
+    }
+
+    @Test
+    fun `default NotificationItem has useExactTime false`() {
+        val item = NotificationItem()
+        assertFalse(item.useExactTime)
+        assertTrue(item.exactTimes.isEmpty())
+    }
+
+    @Test
+    fun `NotificationItem can be created with exact times`() {
+        val times = listOf(
+            ExactTime(9, 0),
+            ExactTime(12, 30),
+            ExactTime(18, 0)
+        )
+        val item = NotificationItem(
+            useExactTime = true,
+            exactTimes = times
+        )
+        assertTrue(item.useExactTime)
+        assertEquals(3, item.exactTimes.size)
+        assertEquals(9, item.exactTimes[0].hour)
+        assertEquals(0, item.exactTimes[0].minute)
+    }
+
+    @Test
+    fun `exact times can be sorted by time of day`() {
+        val times = listOf(
+            ExactTime(18, 0),
+            ExactTime(9, 0),
+            ExactTime(12, 30)
+        )
+        val sorted = times.sortedBy { it.hour * 60 + it.minute }
+        
+        assertEquals(9, sorted[0].hour)
+        assertEquals(0, sorted[0].minute)
+        assertEquals(12, sorted[1].hour)
+        assertEquals(30, sorted[1].minute)
+        assertEquals(18, sorted[2].hour)
+        assertEquals(0, sorted[2].minute)
+    }
+
+    @Test
+    fun `exact times with same hour are sorted by minute`() {
+        val times = listOf(
+            ExactTime(10, 45),
+            ExactTime(10, 0),
+            ExactTime(10, 30)
+        )
+        val sorted = times.sortedBy { it.hour * 60 + it.minute }
+        
+        assertEquals(0, sorted[0].minute)
+        assertEquals(30, sorted[1].minute)
+        assertEquals(45, sorted[2].minute)
+    }
+
+    @Test
+    fun `switching from random to exact time preserves other settings`() {
+        var item = NotificationItem(
+            name = "Test",
+            startHour = 9,
+            startMinute = 0,
+            endHour = 18,
+            endMinute = 0,
+            notificationCount = 5,
+            useExactTime = false
+        )
+        
+        // Switch to exact time
+        item = item.copy(
+            useExactTime = true,
+            exactTimes = listOf(ExactTime(10, 0), ExactTime(15, 0))
+        )
+        
+        assertTrue(item.useExactTime)
+        assertEquals(2, item.exactTimes.size)
+        // Other settings preserved
+        assertEquals("Test", item.name)
+        assertEquals(9, item.startHour)
+        assertEquals(5, item.notificationCount)
+    }
+
+    @Test
+    fun `switching from exact time to random preserves time range`() {
+        var item = NotificationItem(
+            name = "Test",
+            startHour = 9,
+            startMinute = 0,
+            endHour = 18,
+            endMinute = 0,
+            useExactTime = true,
+            exactTimes = listOf(ExactTime(10, 0), ExactTime(15, 0))
+        )
+        
+        // Switch to random time
+        item = item.copy(useExactTime = false)
+        
+        assertFalse(item.useExactTime)
+        // Time range preserved
+        assertEquals(9, item.startHour)
+        assertEquals(0, item.startMinute)
+        assertEquals(18, item.endHour)
+        assertEquals(0, item.endMinute)
+        // Exact times still in object but not used
+        assertEquals(2, item.exactTimes.size)
+    }
+
+    @Test
+    fun `adding exact time to empty list works`() {
+        var item = NotificationItem(useExactTime = true, exactTimes = emptyList())
+        
+        val newTime = ExactTime(12, 0)
+        item = item.copy(exactTimes = item.exactTimes + newTime)
+        
+        assertEquals(1, item.exactTimes.size)
+        assertEquals(12, item.exactTimes[0].hour)
+        assertEquals(0, item.exactTimes[0].minute)
+    }
+
+    @Test
+    fun `removing exact time works`() {
+        val times = listOf(
+            ExactTime(9, 0),
+            ExactTime(12, 0),
+            ExactTime(15, 0)
+        )
+        var item = NotificationItem(useExactTime = true, exactTimes = times)
+        
+        // Remove middle item
+        val newTimes = item.exactTimes.toMutableList()
+        newTimes.removeAt(1)
+        item = item.copy(exactTimes = newTimes)
+        
+        assertEquals(2, item.exactTimes.size)
+        assertEquals(9, item.exactTimes[0].hour)
+        assertEquals(15, item.exactTimes[1].hour)
+    }
+
+    @Test
+    fun `updating exact time at specific index works`() {
+        val times = listOf(
+            ExactTime(9, 0),
+            ExactTime(12, 0),
+            ExactTime(15, 0)
+        )
+        var item = NotificationItem(useExactTime = true, exactTimes = times)
+        
+        // Update second time
+        val newTimes = item.exactTimes.toMutableList()
+        newTimes[1] = ExactTime(13, 30)
+        item = item.copy(exactTimes = newTimes)
+        
+        assertEquals(3, item.exactTimes.size)
+        assertEquals(13, item.exactTimes[1].hour)
+        assertEquals(30, item.exactTimes[1].minute)
+    }
+
+    @Test
+    fun `exact times convert to minutes correctly`() {
+        val time1 = ExactTime(0, 0)  // midnight
+        val time2 = ExactTime(12, 30) // noon thirty
+        val time3 = ExactTime(23, 59) // end of day
+        
+        assertEquals(0, time1.hour * 60 + time1.minute)
+        assertEquals(750, time2.hour * 60 + time2.minute)
+        assertEquals(1439, time3.hour * 60 + time3.minute)
+    }
+
+    @Test
+    fun `exact times with schedule modes - daily with exact times`() {
+        val today = dateMillis(2026, 2, 14)
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.DAILY,
+            useExactTime = true,
+            exactTimes = listOf(
+                ExactTime(9, 0),
+                ExactTime(15, 0),
+                ExactTime(21, 0)
+            )
+        )
+        
+        assertTrue("Daily with exact times should schedule today",
+            item.shouldScheduleOnDate(today))
+    }
+
+    @Test
+    fun `exact times with schedule modes - weekly with exact times`() {
+        val friday = dateMillis(2026, 2, 13) // Friday
+        val saturday = dateMillis(2026, 2, 14) // Saturday
+        
+        val item = NotificationItem(
+            scheduleMode = ScheduleMode.WEEKLY,
+            selectedWeekDays = setOf(5), // Friday only (1=Mon, 5=Fri)
+            useExactTime = true,
+            exactTimes = listOf(ExactTime(10, 0), ExactTime(16, 0))
+        )
+        
+        assertTrue("Friday should be scheduled", item.shouldScheduleOnDate(friday))
+        assertFalse("Saturday should not be scheduled", item.shouldScheduleOnDate(saturday))
+    }
+
+    @Test
+    fun `exact times list can be empty when useExactTime is true`() {
+        // This is a valid state - user hasn't added times yet
+        val item = NotificationItem(
+            useExactTime = true,
+            exactTimes = emptyList()
+        )
+        
+        assertTrue(item.useExactTime)
+        assertEquals(0, item.exactTimes.size)
+    }
+
+    @Test
+    fun `multiple exact times in one minute are allowed`() {
+        // Edge case - user might set multiple notifications at same time
+        val times = listOf(
+            ExactTime(12, 0),
+            ExactTime(12, 0),
+            ExactTime(12, 0)
+        )
+        val item = NotificationItem(useExactTime = true, exactTimes = times)
+        
+        assertEquals(3, item.exactTimes.size)
+        assertTrue(item.exactTimes.all { it.hour == 12 && it.minute == 0 })
     }
 }

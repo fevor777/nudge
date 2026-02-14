@@ -15,10 +15,35 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 
 @Serializable
 enum class ScheduleMode {
-    DAILY,       // Каждый день (только временной промежуток)
-    DATE_RANGE,  // Промежуток дат (от даты до даты)
-    SPECIFIC_DATE // Конкретная дата
+    DAILY,              // Каждый день (только временной промежуток)
+    DATE_RANGE,         // Промежуток дат (от даты до даты)
+    SPECIFIC_DATE,      // Конкретная дата
+    WEEKLY,             // Еженедельно (по дням недели)
+    MONTHLY_BY_DATE,    // Ежемесячно (по числам месяца)
+    MONTHLY_BY_WEEKDAY, // Ежемесячно (N-й день недели)
+    YEARLY              // Ежегодно (конкретный месяц и день)
 }
+
+@Serializable
+enum class MonthlyOrdinal {
+    FIRST,   // Первый
+    SECOND,  // Второй
+    THIRD,   // Третий
+    FOURTH,  // Четвёртый
+    LAST     // Последний
+}
+
+@Serializable
+enum class WorkingDayPosition {
+    FIRST,  // Первый рабочий день месяца
+    LAST    // Последний рабочий день месяца
+}
+
+@Serializable
+data class ExactTime(
+    val hour: Int,
+    val minute: Int
+)
 
 @Serializable
 data class NotificationItem(
@@ -41,7 +66,23 @@ data class NotificationItem(
     val startDateMillis: Long? = null,
     val endDateMillis: Long? = null,
     // Для SPECIFIC_DATE: конкретная дата (epoch millis)
-    val specificDateMillis: Long? = null
+    val specificDateMillis: Long? = null,
+    // Для WEEKLY: выбранные дни недели (1=Пн, 2=Вт, ..., 7=Вс)
+    val selectedWeekDays: Set<Int> = emptySet(),
+    // Для MONTHLY_BY_DATE: выбранные числа месяца (1-31)
+    val selectedMonthDays: Set<Int> = emptySet(),
+    // Для MONTHLY_BY_WEEKDAY: порядковый номер недели и день недели
+    val monthWeekdayOrdinal: MonthlyOrdinal? = null,
+    val monthWeekday: Int? = null, // 1=Пн, 2=Вт, ..., 7=Вс
+    // Для YEARLY: месяц (1-12) и день (1-31)
+    val yearlyMonth: Int? = null,
+    val yearlyDay: Int? = null,
+    // Для MONTHLY_BY_DATE: опция "рабочий день месяца"
+    val workingDaysOnly: Boolean = false,
+    val workingDayPosition: WorkingDayPosition? = null,
+    // Режим времени: точное время или случайное в промежутке
+    val useExactTime: Boolean = false,
+    val exactTimes: List<ExactTime> = emptyList()
 ) {
     // Для обратной совместимости и удобства
     fun getRandomText(): String {
@@ -68,6 +109,10 @@ data class NotificationItem(
      * @return true если уведомление должно сработать в этот день
      */
     fun shouldScheduleOnDate(todayStartMillis: Long): Boolean {
+        val calendar = java.util.Calendar.getInstance().apply {
+            timeInMillis = todayStartMillis
+        }
+        
         return when (scheduleMode) {
             ScheduleMode.SPECIFIC_DATE -> {
                 val specificDate = specificDateMillis ?: return false
@@ -91,6 +136,33 @@ data class NotificationItem(
                     true
                 }
             }
+            ScheduleMode.WEEKLY -> {
+                val dayOfWeek = getDayOfWeek(calendar)
+                selectedWeekDays.contains(dayOfWeek)
+            }
+            ScheduleMode.MONTHLY_BY_DATE -> {
+                if (workingDaysOnly) {
+                    when (workingDayPosition) {
+                        WorkingDayPosition.FIRST -> isFirstWorkingDay(calendar)
+                        WorkingDayPosition.LAST -> isLastWorkingDay(calendar)
+                        null -> false
+                    }
+                } else {
+                    val dayOfMonth = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                    selectedMonthDays.contains(dayOfMonth)
+                }
+            }
+            ScheduleMode.MONTHLY_BY_WEEKDAY -> {
+                val ordinal = monthWeekdayOrdinal ?: return false
+                val weekday = monthWeekday ?: return false
+                isNthWeekdayOfMonth(calendar, ordinal, weekday)
+            }
+            ScheduleMode.YEARLY -> {
+                val month = yearlyMonth ?: return false
+                val day = yearlyDay ?: return false
+                calendar.get(java.util.Calendar.MONTH) + 1 == month &&
+                calendar.get(java.util.Calendar.DAY_OF_MONTH) == day
+            }
         }
     }
 
@@ -104,6 +176,84 @@ data class NotificationItem(
             cal.set(java.util.Calendar.SECOND, 0)
             cal.set(java.util.Calendar.MILLISECOND, 0)
             return cal.timeInMillis
+        }
+        
+        /** Преобразует Calendar.DAY_OF_WEEK в ISO формат (1=Пн, 7=Вс) */
+        private fun getDayOfWeek(calendar: java.util.Calendar): Int {
+            val calendarDay = calendar.get(java.util.Calendar.DAY_OF_WEEK)
+            return when (calendarDay) {
+                java.util.Calendar.MONDAY -> 1
+                java.util.Calendar.TUESDAY -> 2
+                java.util.Calendar.WEDNESDAY -> 3
+                java.util.Calendar.THURSDAY -> 4
+                java.util.Calendar.FRIDAY -> 5
+                java.util.Calendar.SATURDAY -> 6
+                java.util.Calendar.SUNDAY -> 7
+                else -> 1
+            }
+        }
+        
+        /** Проверяет, является ли дата N-м днём недели в месяце */
+        private fun isNthWeekdayOfMonth(calendar: java.util.Calendar, ordinal: MonthlyOrdinal, weekday: Int): Boolean {
+            val currentDayOfWeek = getDayOfWeek(calendar)
+            if (currentDayOfWeek != weekday) return false
+            
+            if (ordinal == MonthlyOrdinal.LAST) {
+                // Проверяем, что это последнее появление этого дня недели в месяце
+                val testCal = calendar.clone() as java.util.Calendar
+                testCal.add(java.util.Calendar.DAY_OF_MONTH, 7)
+                return testCal.get(java.util.Calendar.MONTH) != calendar.get(java.util.Calendar.MONTH)
+            } else {
+                // Считаем, какой это по счёту день недели в месяце
+                val dayOfMonth = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                val occurrence = (dayOfMonth - 1) / 7 + 1
+                val targetOccurrence = when (ordinal) {
+                    MonthlyOrdinal.FIRST -> 1
+                    MonthlyOrdinal.SECOND -> 2
+                    MonthlyOrdinal.THIRD -> 3
+                    MonthlyOrdinal.FOURTH -> 4
+                    else -> return false
+                }
+                return occurrence == targetOccurrence
+            }
+        }
+        
+        /** Проверяет, является ли день рабочим (Пн-Пт) */
+        private fun isWorkingDay(calendar: java.util.Calendar): Boolean {
+            val dayOfWeek = getDayOfWeek(calendar)
+            return dayOfWeek in 1..5
+        }
+        
+        /** Проверяет, является ли дата первым рабочим днём месяца */
+        private fun isFirstWorkingDay(calendar: java.util.Calendar): Boolean {
+            if (!isWorkingDay(calendar)) return false
+            
+            val testCal = calendar.clone() as java.util.Calendar
+            testCal.set(java.util.Calendar.DAY_OF_MONTH, 1)
+            
+            while (testCal.get(java.util.Calendar.MONTH) == calendar.get(java.util.Calendar.MONTH)) {
+                if (isWorkingDay(testCal)) {
+                    return testCal.get(java.util.Calendar.DAY_OF_MONTH) == calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                }
+                testCal.add(java.util.Calendar.DAY_OF_MONTH, 1)
+            }
+            return false
+        }
+        
+        /** Проверяет, является ли дата последним рабочим днём месяца */
+        private fun isLastWorkingDay(calendar: java.util.Calendar): Boolean {
+            if (!isWorkingDay(calendar)) return false
+            
+            val testCal = calendar.clone() as java.util.Calendar
+            testCal.set(java.util.Calendar.DAY_OF_MONTH, testCal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+            
+            while (testCal.get(java.util.Calendar.MONTH) == calendar.get(java.util.Calendar.MONTH)) {
+                if (isWorkingDay(testCal)) {
+                    return testCal.get(java.util.Calendar.DAY_OF_MONTH) == calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                }
+                testCal.add(java.util.Calendar.DAY_OF_MONTH, -1)
+            }
+            return false
         }
     }
 }

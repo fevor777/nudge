@@ -1,53 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.randomnotif.app.data.NotificationItemTest" tests="49" skipped="0" failures="0" errors="0" timestamp="2026-02-14T12:55:12.607Z" hostname="192.168.1.18" time="0.051">
+<testsuite name="com.randomnotif.app.data.NotificationItemTest" tests="86" skipped="0" failures="0" errors="0" timestamp="2026-02-14T20:21:02.519Z" hostname="192.168.1.18" time="0.056">
   <properties/>
-  <testcase name="disabled item still has valid shouldScheduleOnDate" classname="com.randomnotif.app.data.NotificationItemTest" time="0.007"/>
-  <testcase name="disabled items are skipped in settings filtering" classname="com.randomnotif.app.data.NotificationItemTest" time="0.012"/>
+  <testcase name="disabled item still has valid shouldScheduleOnDate" classname="com.randomnotif.app.data.NotificationItemTest" time="0.011"/>
+  <testcase name="disabled items are skipped in settings filtering" classname="com.randomnotif.app.data.NotificationItemTest" time="0.009"/>
+  <testcase name="YEARLY schedules on leap day (Feb 29)" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="enabled item with DAILY mode and interval schedules correctly" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="exact times can be sorted by time of day" classname="com.randomnotif.app.data.NotificationItemTest" time="0.002"/>
   <testcase name="isEnabled defaults to false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="notificationCount can be decreased to 1" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
-  <testcase name="enabling preserves existing intervalStartDateMillis" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="notificationCount can be decreased to 1" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="YEARLY with null month returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="enabling preserves existing intervalStartDateMillis" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="MONTHLY_BY_DATE with last working day mode" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DAILY mode with interval and no intervalStartDateMillis uses today as start" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="getRandomTexts with count 2 has bullet prefix and no comma" classname="com.randomnotif.app.data.NotificationItemTest" time="0.005"/>
+  <testcase name="getRandomTexts with count 2 has bullet prefix and no comma" classname="com.randomnotif.app.data.NotificationItemTest" time="0.004"/>
   <testcase name="toggling isEnabled preserves all other fields" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="normalizeToStartOfDay strips time component" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY schedules on last Sunday of month" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
   <testcase name="DATE_RANGE with null start returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DATE_RANGE schedules within range" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="DATE_RANGE with null end returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="DATE_RANGE with null end returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY schedules on fourth Thursday of month" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="getRandomTexts with count 3 has bullets and no commas" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="getRandomTexts with count 1 returns single text no comma no bullet" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="DAILY mode with interval 3 schedules every 3 days" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="getRandomTexts with count 1 returns single text no comma no bullet" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="ExactTime data class creates correctly" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="WEEKLY mode schedules on selected day of week" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY with null weekday returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="YEARLY schedules on New Year" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="DAILY mode with interval 3 schedules every 3 days" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="MONTHLY_BY_DATE schedules on selected day of month" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="deserialization of old JSON without new fields uses defaults" classname="com.randomnotif.app.data.NotificationItemTest" time="0.006"/>
   <testcase name="notificationCount change preserves other fields" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="default NotificationItem has useExactTime false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="updating exact time at specific index works" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="notificationCount minimum is 1 (UI constraint)" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="full scenario - create enable change count disable" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="WEEKLY mode schedules on multiple selected days" classname="com.randomnotif.app.data.NotificationItemTest" time="0.003"/>
   <testcase name="DATE_RANGE does not schedule outside range" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="getRandomText returns the only text when list has one item" classname="com.randomnotif.app.data.NotificationItemTest" time="0.002"/>
-  <testcase name="notificationCount defaults to 1" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="exact times convert to minutes correctly" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="getRandomText returns the only text when list has one item" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="notificationCount defaults to 1" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="WEEKLY mode with empty selectedWeekDays returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="textsPerNotification cannot exceed text list size" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DAILY mode with interval 1 always schedules" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="adding texts does not auto-increase textsPerNotification" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="multiple exact times in one minute are allowed" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY schedules on third Wednesday of month" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="getRandomTexts all texts are unique" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
-  <testcase name="serialization round trip preserves all fields" classname="com.randomnotif.app.data.NotificationItemTest" time="0.008"/>
-  <testcase name="notificationCount maximum is 50 (UI constraint)" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY schedules on first Monday of month" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="serialization round trip preserves all fields" classname="com.randomnotif.app.data.NotificationItemTest" time="0.005"/>
+  <testcase name="notificationCount maximum is 50 (UI constraint)" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="switching from exact time to random preserves time range" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="textsPerNotification is clamped when text is removed" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="no enabled items means nothing to schedule" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="no enabled items means nothing to schedule" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_DATE with empty selectedMonthDays returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DATE_RANGE single day range works" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DAILY mode with interval before start date does not fire" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="SPECIFIC_DATE normalizes time part of specificDateMillis" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_DATE schedules on multiple selected days" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
   <testcase name="textsPerNotification stays same when text removed but still within range" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_DATE with workingDaysOnly but null position returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="getRandomTexts clamps count to list size" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="textsPerNotification clamps down to 1 when all but one text removed" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="getRandomText returns one of the texts" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="getRandomText returns one of the texts" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="WEEKLY mode schedules on Sunday (day 7)" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="exact times with same hour are sorted by minute" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="NotificationItem can be created with exact times" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY schedules on second Friday of month" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="notificationCount zero returns 0 from time range calculation" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="enabling sets intervalStartDateMillis when null (simulating UI logic)" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="SPECIFIC_DATE does not schedule on different date" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_DATE with first working day mode" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="SPECIFIC_DATE with null specificDateMillis returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="exact times with schedule modes - weekly with exact times" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="YEARLY with null day returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="textsPerNotification defaults to 1" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DAILY mode with interval 2 schedules every other day" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
-  <testcase name="SPECIFIC_DATE schedules on matching date" classname="com.randomnotif.app.data.NotificationItemTest" time="0.001"/>
+  <testcase name="exact times list can be empty when useExactTime is true" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="SPECIFIC_DATE schedules on matching date" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="getRandomTexts returns default when texts are empty" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="removing exact time works" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="exact times with schedule modes - daily with exact times" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="YEARLY schedules on specific date every year" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="switching from random to exact time preserves other settings" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="getRandomText returns default when texts are empty" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="adding exact time to empty list works" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
+  <testcase name="MONTHLY_BY_WEEKDAY with null ordinal returns false" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <testcase name="DAILY mode with interval 7 schedules weekly" classname="com.randomnotif.app.data.NotificationItemTest" time="0.002"/>
   <testcase name="notificationCount can be increased" classname="com.randomnotif.app.data.NotificationItemTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
