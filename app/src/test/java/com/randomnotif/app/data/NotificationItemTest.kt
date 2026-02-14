@@ -72,7 +72,7 @@ class NotificationItemTest {
     }
 
     @Test
-    fun `getRandomTexts with count 2 has bullet prefix and comma on first line only`() {
+    fun `getRandomTexts with count 2 has bullet prefix and no comma`() {
         val item = NotificationItem(
             notificationTexts = listOf("A", "B", "C"),
             textsPerNotification = 2
@@ -81,13 +81,12 @@ class NotificationItemTest {
         val lines = result.split("\n")
         assertEquals("Should have 2 lines", 2, lines.size)
         assertTrue("First line should start with bullet", lines[0].startsWith("• "))
-        assertTrue("First line should end with comma", lines[0].endsWith(","))
+        assertFalse("Should not contain comma", result.contains(","))
         assertTrue("Last line should start with bullet", lines[1].startsWith("• "))
-        assertFalse("Last line should NOT end with comma", lines[1].endsWith(","))
     }
 
     @Test
-    fun `getRandomTexts with count 3 has bullets and commas on all lines except last`() {
+    fun `getRandomTexts with count 3 has bullets and no commas`() {
         val item = NotificationItem(
             notificationTexts = listOf("A", "B", "C"),
             textsPerNotification = 3
@@ -98,9 +97,7 @@ class NotificationItemTest {
         for (line in lines) {
             assertTrue("Each line should start with bullet", line.startsWith("• "))
         }
-        assertTrue("Line 1 should end with comma", lines[0].endsWith(","))
-        assertTrue("Line 2 should end with comma", lines[1].endsWith(","))
-        assertFalse("Line 3 should NOT end with comma", lines[2].endsWith(","))
+        assertFalse("Should not contain comma", result.contains(","))
     }
 
     @Test
@@ -121,7 +118,7 @@ class NotificationItemTest {
         // Run multiple times to verify uniqueness
         repeat(20) {
             val result = item.getRandomTexts()
-            val lines = result.split("\n").map { it.removePrefix("• ").removeSuffix(",") }
+            val lines = result.split("\n").map { it.removePrefix("• ") }
             assertEquals("All texts in result should be unique", lines.size, lines.toSet().size)
         }
     }

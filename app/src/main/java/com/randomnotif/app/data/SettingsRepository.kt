@@ -59,10 +59,7 @@ data class NotificationItem(
         val effectiveCount = count.coerceIn(1, notificationTexts.size)
         val selected = notificationTexts.shuffled().take(effectiveCount)
         if (effectiveCount == 1) return selected.first()
-        return selected.mapIndexed { index, text ->
-            val prefix = "• "
-            if (index < selected.size - 1) "$prefix$text," else "$prefix$text"
-        }.joinToString("\n")
+        return selected.map { text -> "• $text" }.joinToString("\n")
     }
 
     /**
