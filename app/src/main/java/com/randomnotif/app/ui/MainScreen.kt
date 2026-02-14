@@ -20,7 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.randomnotif.app.data.NotificationItem
 import com.randomnotif.app.data.NotificationSettings
+import com.randomnotif.app.data.ScheduleMode
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.rememberUpdatedState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,24 +152,32 @@ fun NotificationItemCard(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+    var showSpecificDatePicker by remember { mutableStateOf(false) }
     
     // Local state for text fields - completely decoupled from parent during editing
     var localName by remember(item.id) { mutableStateOf(item.name) }
     var localTexts by remember(item.id) { mutableStateOf(item.notificationTexts) }
     
+    // Use rememberUpdatedState so the debounced effects always see the latest item & callback,
+    // preventing stale captures that could revert other settings changes during the delay
+    val currentItem by rememberUpdatedState(item)
+    val currentOnUpdate by rememberUpdatedState(onUpdate)
+    
     // Debounced save for name - only save after 500ms of no typing
     LaunchedEffect(localName) {
-        if (localName != item.name) {
+        if (localName != currentItem.name) {
             delay(500)
-            onUpdate(item.copy(name = localName))
+            currentOnUpdate(currentItem.copy(name = localName))
         }
     }
     
     // Debounced save for texts - only save after 500ms of no typing
     LaunchedEffect(localTexts) {
-        if (localTexts != item.notificationTexts) {
+        if (localTexts != currentItem.notificationTexts) {
             delay(500)
-            onUpdate(item.copy(notificationTexts = localTexts))
+            currentOnUpdate(currentItem.copy(notificationTexts = localTexts))
         }
     }
     
@@ -196,7 +209,13 @@ fun NotificationItemCard(
                     Switch(
                         checked = item.isEnabled,
                         onCheckedChange = { enabled ->
-                            onUpdate(item.copy(isEnabled = enabled))
+                            val updated = if (enabled && item.intervalStartDateMillis == null) {
+                                // Set interval start date to today when first enabled
+                                item.copy(isEnabled = true, intervalStartDateMillis = System.currentTimeMillis())
+                            } else {
+                                item.copy(isEnabled = enabled)
+                            }
+                            onUpdate(updated)
                         }
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -205,8 +224,19 @@ fun NotificationItemCard(
                             text = item.name,
                             style = MaterialTheme.typography.titleMedium
                         )
+                        val scheduleInfo = when (item.scheduleMode) {
+                            ScheduleMode.DAILY -> if (item.intervalDays > 1) "Раз в ${item.intervalDays} дн." else "Ежедневно"
+                            ScheduleMode.DATE_RANGE -> {
+                                val start = item.startDateMillis?.let { formatDate(it) } ?: "?"
+                                val end = item.endDateMillis?.let { formatDate(it) } ?: "?"
+                                "$start – $end"
+                            }
+                            ScheduleMode.SPECIFIC_DATE -> {
+                                item.specificDateMillis?.let { formatDate(it) } ?: "Дата не выбрана"
+                            }
+                        }
                         Text(
-                            text = "${String.format("%02d:%02d", item.startHour, item.startMinute)} - ${String.format("%02d:%02d", item.endHour, item.endMinute)} • ${item.notificationCount}x • ${item.notificationTexts.size} текст(ов)",
+                            text = "${String.format("%02d:%02d", item.startHour, item.startMinute)} - ${String.format("%02d:%02d", item.endHour, item.endMinute)} • ${item.notificationCount}x • $scheduleInfo",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -272,7 +302,12 @@ fun NotificationItemCard(
                                         val newTexts = localTexts.toMutableList()
                                         newTexts.removeAt(index)
                                         localTexts = newTexts
-                                        onUpdate(item.copy(notificationTexts = newTexts))
+                                        // Clamp textsPerNotification if it exceeds new list size
+                                        val clampedTextsPerNotif = item.textsPerNotification.coerceAtMost(newTexts.size)
+                                        onUpdate(item.copy(
+                                            notificationTexts = newTexts,
+                                            textsPerNotification = clampedTextsPerNotif
+                                        ))
                                     }
                                 ) {
                                     Icon(
@@ -296,6 +331,187 @@ fun NotificationItemCard(
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Добавить вариант текста")
+                    }
+
+                    // Texts per notification
+                    Text(
+                        text = "Текстов в одном уведомлении",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                if (item.textsPerNotification > 1) {
+                                    onUpdate(item.copy(textsPerNotification = item.textsPerNotification - 1))
+                                }
+                            },
+                            enabled = item.textsPerNotification > 1
+                        ) {
+                            Text("-")
+                        }
+                        Text(
+                            text = item.textsPerNotification.toString(),
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                if (item.textsPerNotification < item.notificationTexts.size) {
+                                    onUpdate(item.copy(textsPerNotification = item.textsPerNotification + 1))
+                                }
+                            },
+                            enabled = item.textsPerNotification < item.notificationTexts.size
+                        ) {
+                            Text("+")
+                        }
+                    }
+                    if (item.notificationTexts.size > 1) {
+                        Text(
+                            text = "Из ${item.notificationTexts.size} текстов будет случайно выбрано ${item.textsPerNotification}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Schedule Mode
+                    Text(
+                        text = "Режим расписания",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SegmentedButton(
+                            selected = item.scheduleMode == ScheduleMode.DAILY,
+                            onClick = { onUpdate(item.copy(scheduleMode = ScheduleMode.DAILY)) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3)
+                        ) {
+                            Text("Ежедневно", style = MaterialTheme.typography.labelSmall)
+                        }
+                        SegmentedButton(
+                            selected = item.scheduleMode == ScheduleMode.DATE_RANGE,
+                            onClick = { onUpdate(item.copy(scheduleMode = ScheduleMode.DATE_RANGE)) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3)
+                        ) {
+                            Text("Диапазон", style = MaterialTheme.typography.labelSmall)
+                        }
+                        SegmentedButton(
+                            selected = item.scheduleMode == ScheduleMode.SPECIFIC_DATE,
+                            onClick = { onUpdate(item.copy(scheduleMode = ScheduleMode.SPECIFIC_DATE)) },
+                            shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3)
+                        ) {
+                            Text("Дата", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+
+                    // Date selection based on mode
+                    when (item.scheduleMode) {
+                        ScheduleMode.DATE_RANGE -> {
+                            Text(
+                                text = "Диапазон дат",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("С", style = MaterialTheme.typography.bodySmall)
+                                    OutlinedButton(
+                                        onClick = { showStartDatePicker = true }
+                                    ) {
+                                        Text(
+                                            text = item.startDateMillis?.let {
+                                                formatDate(it)
+                                            } ?: "Выбрать"
+                                        )
+                                    }
+                                }
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("По", style = MaterialTheme.typography.bodySmall)
+                                    OutlinedButton(
+                                        onClick = { showEndDatePicker = true }
+                                    ) {
+                                        Text(
+                                            text = item.endDateMillis?.let {
+                                                formatDate(it)
+                                            } ?: "Выбрать"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        ScheduleMode.SPECIFIC_DATE -> {
+                            Text(
+                                text = "Дата",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            OutlinedButton(
+                                onClick = { showSpecificDatePicker = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = item.specificDateMillis?.let {
+                                        formatDate(it)
+                                    } ?: "Выбрать дату"
+                                )
+                            }
+                        }
+                        ScheduleMode.DAILY -> {
+                            // Interval days control
+                            Text(
+                                text = "Интервал (дни)",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        if (item.intervalDays > 1) {
+                                            onUpdate(item.copy(intervalDays = item.intervalDays - 1))
+                                        }
+                                    },
+                                    enabled = item.intervalDays > 1
+                                ) {
+                                    Text("-")
+                                }
+                                Text(
+                                    text = item.intervalDays.toString(),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                )
+                                OutlinedButton(
+                                    onClick = {
+                                        if (item.intervalDays < 365) {
+                                            onUpdate(item.copy(intervalDays = item.intervalDays + 1))
+                                        }
+                                    },
+                                    enabled = item.intervalDays < 365
+                                ) {
+                                    Text("+")
+                                }
+                            }
+                            Text(
+                                text = when (item.intervalDays) {
+                                    1 -> "Каждый день"
+                                    2 -> "Раз в 2 дня"
+                                    else -> "Раз в ${item.intervalDays} дней"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     // Time Range
@@ -430,6 +646,40 @@ fun NotificationItemCard(
         )
     }
 
+    // Date Picker Dialogs
+    if (showStartDatePicker) {
+        DatePickerDialog(
+            initialDateMillis = item.startDateMillis,
+            onConfirm = { millis ->
+                onUpdate(item.copy(startDateMillis = millis))
+                showStartDatePicker = false
+            },
+            onDismiss = { showStartDatePicker = false }
+        )
+    }
+
+    if (showEndDatePicker) {
+        DatePickerDialog(
+            initialDateMillis = item.endDateMillis,
+            onConfirm = { millis ->
+                onUpdate(item.copy(endDateMillis = millis))
+                showEndDatePicker = false
+            },
+            onDismiss = { showEndDatePicker = false }
+        )
+    }
+
+    if (showSpecificDatePicker) {
+        DatePickerDialog(
+            initialDateMillis = item.specificDateMillis,
+            onConfirm = { millis ->
+                onUpdate(item.copy(specificDateMillis = millis))
+                showSpecificDatePicker = false
+            },
+            onDismiss = { showSpecificDatePicker = false }
+        )
+    }
+
     // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
@@ -489,4 +739,42 @@ fun TimePickerDialog(
             TimePicker(state = timePickerState)
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerDialog(
+    initialDateMillis: Long?,
+    onConfirm: (Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDateMillis ?: System.currentTimeMillis()
+    )
+
+    androidx.compose.material3.DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { onConfirm(it) }
+                },
+                enabled = datePickerState.selectedDateMillis != null
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
+    }
+}
+
+fun formatDate(millis: Long): String {
+    val sdf = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    return sdf.format(Date(millis))
 }

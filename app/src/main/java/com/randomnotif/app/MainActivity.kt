@@ -27,6 +27,7 @@ import com.randomnotif.app.ui.ExportImportScreen
 import com.randomnotif.app.ui.MainScreen
 import com.randomnotif.app.ui.theme.RandomNotifTheme
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -100,10 +101,9 @@ class MainActivity : ComponentActivity() {
                             val success = settingsRepository.importFromJson(jsonText)
                             if (success) {
                                 lifecycleScope.launch {
-                                    settingsRepository.settingsFlow.collectLatest { loadedSettings ->
-                                        settings = loadedSettings
-                                        notificationScheduler.scheduleAllNotifications(settings)
-                                    }
+                                    val loadedSettings = settingsRepository.settingsFlow.first()
+                                    settings = loadedSettings
+                                    notificationScheduler.scheduleAllNotifications(loadedSettings)
                                 }
                             }
                             success
@@ -115,24 +115,24 @@ class MainActivity : ComponentActivity() {
                         settings = settings,
                         onAddNotification = {
                             lifecycleScope.launch {
-                                settings = settingsRepository.addNotification()
-                                notificationScheduler.scheduleAllNotifications(settings)
+                                val updatedSettings = settingsRepository.addNotification()
+                                notificationScheduler.scheduleAllNotifications(updatedSettings)
                             }
                         },
                         onDeleteNotification = { id ->
                             lifecycleScope.launch {
-                                settings = settingsRepository.deleteNotification(id)
-                                notificationScheduler.scheduleAllNotifications(settings)
+                                val updatedSettings = settingsRepository.deleteNotification(id)
+                                notificationScheduler.scheduleAllNotifications(updatedSettings)
                             }
                         },
                         onUpdateNotification = { item ->
                             lifecycleScope.launch {
-                                settings = settingsRepository.updateNotification(item)
-                                notificationScheduler.scheduleAllNotifications(settings)
+                                val updatedSettings = settingsRepository.updateNotification(item)
+                                notificationScheduler.scheduleAllNotifications(updatedSettings)
                             }
                         },
                         onTestClick = { item ->
-                            notificationScheduler.showTestNotification(item.getRandomText(), item.name)
+                            notificationScheduler.showTestNotification(item.getRandomTexts(), item.name)
                         },
                         onExportImportClick = { showExportImport = true },
                         modifier = Modifier.fillMaxSize()

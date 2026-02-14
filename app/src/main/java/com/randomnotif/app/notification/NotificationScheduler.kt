@@ -66,7 +66,17 @@ class NotificationScheduler(private val context: Context) {
         val calendar = Calendar.getInstance()
         val today = calendar.get(Calendar.DAY_OF_YEAR)
         val year = calendar.get(Calendar.YEAR)
-        
+
+        // Check date mode constraints
+        val todayStartMillis = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        if (!item.shouldScheduleOnDate(todayStartMillis)) return 0
+
         // Use date + item id as seed for consistent but unique random times per day per item
         val seed = (year * 1000L + today) + item.id.hashCode()
         val random = Random(seed)
@@ -136,8 +146,8 @@ class NotificationScheduler(private val context: Context) {
             }
 
             val globalIndex = startIndex + index
-            // Выбираем случайный текст из списка
-            val randomText = item.getRandomText()
+            // Выбираем случайные тексты из списка (textsPerNotification штук)
+            val randomText = item.getRandomTexts()
             scheduleExactAlarm(
                 notificationCalendar.timeInMillis, 
                 randomText, 
@@ -231,8 +241,12 @@ class NotificationScheduler(private val context: Context) {
     }
 
     fun cancelAllNotifications() {
+        // IMPORTANT: Intent must match the action used when scheduling,
+        // otherwise PendingIntent won't match and alarms won't be cancelled
         for (i in 0..500) {
-            val intent = Intent(context, NotificationReceiver::class.java)
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                action = ACTION_SHOW_NOTIFICATION
+            }
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 i,
@@ -245,8 +259,10 @@ class NotificationScheduler(private val context: Context) {
             }
         }
 
-        // Cancel daily reschedule
-        val rescheduleIntent = Intent(context, NotificationReceiver::class.java)
+        // Cancel daily reschedule — action must match scheduleDailyReschedule()
+        val rescheduleIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = "com.randomnotif.app.DAILY_RESCHEDULE"
+        }
         val reschedulePendingIntent = PendingIntent.getBroadcast(
             context,
             9999,
@@ -264,6 +280,7 @@ class NotificationScheduler(private val context: Context) {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(name)
             .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()

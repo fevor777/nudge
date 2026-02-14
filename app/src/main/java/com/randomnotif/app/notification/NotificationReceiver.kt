@@ -40,6 +40,7 @@ class NotificationReceiver : BroadcastReceiver() {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(name)
             .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
